@@ -461,9 +461,10 @@ class DataLoader2D(SlimDataLoaderBase):
             else:
                 force_fg = False
 
-            if not isfile(self._data[i]['data_file'][:-4] + ".npy"):
+            # if not isfile(self._data[i]['data_file'][:-4] + ".npy"):
+            if isfile(self._data[i]['data_file'][:-4] + ".npz"):
                 # lets hope you know what you're doing
-                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npz", allow_pickle=True)['data']
+                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npz")['data']
             else:
                 case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npy", self.memmap_mode)
 
