@@ -41,7 +41,7 @@ def convert_to_npy(args):
     else:
         npz_file, key = args
     if not isfile(npz_file[:-3] + "npy"):
-        a = np.load(npz_file)[key]
+        a = np.load(npz_file, allow_pickle=True)[key]
         np.save(npz_file[:-3] + "npy", a)
 
 
@@ -51,7 +51,7 @@ def save_as_npz(args):
         npy_file = args
     else:
         npy_file, key = args
-    d = np.load(npy_file)
+    d = np.load(npy_file, allow_pickle=True)
     np.savez_compressed(npy_file[:-3] + "npz", **{key: d})
 
 
@@ -212,9 +212,9 @@ class DataLoader3D(SlimDataLoaderBase):
 
         k = list(self._data.keys())[0]
         if isfile(self._data[k]['data_file'][:-4] + ".npy"):
-            case_all_data = np.load(self._data[k]['data_file'][:-4] + ".npy", self.memmap_mode)
+            case_all_data = np.load(self._data[k]['data_file'][:-4] + ".npy", self.memmap_mode, allow_pickle=True)
         else:
-            case_all_data = np.load(self._data[k]['data_file'])['data']
+            case_all_data = np.load(self._data[k]['data_file'], allow_pickle=True)['data']
         num_color_channels = case_all_data.shape[0] - 1
         data_shape = (self.batch_size, num_color_channels, *self.patch_size)
         seg_shape = (self.batch_size, num_seg, *self.patch_size)
@@ -242,9 +242,9 @@ class DataLoader3D(SlimDataLoaderBase):
             # cases are stored as npz, but we require unpack_dataset to be run. This will decompress them into npy
             # which is much faster to access
             if isfile(self._data[i]['data_file'][:-4] + ".npy"):
-                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npy", self.memmap_mode)
+                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npy", self.memmap_mode, allow_pickle=True)
             else:
-                case_all_data = np.load(self._data[i]['data_file'])['data']
+                case_all_data = np.load(self._data[i]['data_file'], allow_pickle=True)['data']
 
             # If we are doing the cascade then we will also need to load the segmentation of the previous stage and
             # concatenate it. Here it will be concatenates to the segmentation because the augmentations need to be
@@ -253,9 +253,9 @@ class DataLoader3D(SlimDataLoaderBase):
             if self.has_prev_stage:
                 if isfile(self._data[i]['seg_from_prev_stage_file'][:-4] + ".npy"):
                     segs_from_previous_stage = np.load(self._data[i]['seg_from_prev_stage_file'][:-4] + ".npy",
-                                                       mmap_mode=self.memmap_mode)[None]
+                                                       mmap_mode=self.memmap_mode, allow_pickle=True)[None]
                 else:
-                    segs_from_previous_stage = np.load(self._data[i]['seg_from_prev_stage_file'])['data'][None]
+                    segs_from_previous_stage = np.load(self._data[i]['seg_from_prev_stage_file'], allow_pickle=True)['data'][None]
                 # we theoretically support several possible previsous segmentations from which only one is sampled. But
                 # in practice this feature was never used so it's always only one segmentation
                 seg_key = np.random.choice(segs_from_previous_stage.shape[0])
@@ -431,9 +431,9 @@ class DataLoader2D(SlimDataLoaderBase):
 
         k = list(self._data.keys())[0]
         if isfile(self._data[k]['data_file'][:-4] + ".npy"):
-            case_all_data = np.load(self._data[k]['data_file'][:-4] + ".npy", self.memmap_mode)
+            case_all_data = np.load(self._data[k]['data_file'][:-4] + ".npy", self.memmap_mode, allow_pickle=True)
         else:
-            case_all_data = np.load(self._data[k]['data_file'])['data']
+            case_all_data = np.load(self._data[k]['data_file'], allow_pickle=True)['data']
         num_color_channels = case_all_data.shape[0] - num_seg
         data_shape = (self.batch_size, num_color_channels, *self.patch_size)
         seg_shape = (self.batch_size, num_seg, *self.patch_size)
@@ -463,9 +463,9 @@ class DataLoader2D(SlimDataLoaderBase):
 
             if not isfile(self._data[i]['data_file'][:-4] + ".npy"):
                 # lets hope you know what you're doing
-                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npz")['data']
+                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npz", allow_pickle=True)['data']
             else:
-                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npy", self.memmap_mode)
+                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npy", self.memmap_mode, allow_pickle=True)
 
             # this is for when there is just a 2d slice in case_all_data (2d support)
             if len(case_all_data.shape) == 3:
