@@ -465,7 +465,7 @@ class DataLoader2D(SlimDataLoaderBase):
                 # lets hope you know what you're doing
                 case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npz", allow_pickle=True)['data']
             else:
-                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npy", self.memmap_mode, allow_pickle=True)
+                case_all_data = np.load(self._data[i]['data_file'][:-4] + ".npy", self.memmap_mode)
 
             # this is for when there is just a 2d slice in case_all_data (2d support)
             if len(case_all_data.shape) == 3:
