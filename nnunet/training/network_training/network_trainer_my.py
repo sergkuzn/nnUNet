@@ -85,7 +85,7 @@ class NetworkTrainerMy(object):
 
         ################# SET THESE IN LOAD_DATASET OR DO_SPLIT ############################
         self.dataset = None  # these can be None for inference mode
-        self.dataset_tr = self.dataset_val = None  # do not need to be used, they just appear if you are using the suggested load_dataset_and_do_split
+        self.dataset_tr = self.dataset_val = self.dataset_test = None  # do not need to be used, they just appear if you are using the suggested load_dataset_and_do_split
 
         ################# THESE DO NOT NECESSARILY NEED TO BE MODIFIED #####################
         self.patience = 50
@@ -146,7 +146,7 @@ class NetworkTrainerMy(object):
     def load_dataset(self):
         pass
 
-    def do_split(self):
+    def do_split_old(self):
         """
         This is a suggestion for if your dataset is a dictionary (my personal standard)
         :return:
@@ -183,6 +183,38 @@ class NetworkTrainerMy(object):
         self.dataset_val = OrderedDict()
         for i in val_keys:
             self.dataset_val[i] = self.dataset[i]
+
+    def do_split(self):
+        """
+        This is a suggestion for if your dataset is a dictionary (my personal standard)
+        :return:
+        """
+        splits_file = join(self.dataset_directory, "splits.pkl")
+        if not isfile(splits_file):
+            raise FileExistsError('File with train-val-test splits myst exist, but not found!')
+
+        self.print_to_log_file("Splits file found.")
+
+        splits = load_pickle(splits_file)
+        tr_keys = np.array(splits['train'])
+        val_keys = np.array(splits['val'])
+        test_keys = np.array(splits['test'])
+
+        tr_keys.sort()
+        val_keys.sort()
+        test_keys.sort()
+
+        self.dataset_tr = OrderedDict()
+        for i in tr_keys:
+            self.dataset_tr[i] = self.dataset[i]
+
+        self.dataset_val = OrderedDict()
+        for i in val_keys:
+            self.dataset_val[i] = self.dataset[i]
+
+        self.dataset_test = OrderedDict()
+        for i in test_keys:
+            self.dataset_test[i] = self.dataset[i]
 
     def plot_progress(self):
         """

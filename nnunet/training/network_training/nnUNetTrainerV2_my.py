@@ -92,7 +92,7 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
             self.folder_with_preprocessed_data = join(self.dataset_directory, self.plans['data_identifier'] +
                                                       "_stage%d" % self.stage)
             if training:
-                self.dl_tr, self.dl_val = self.get_basic_generators()
+                self.dl_tr, self.dl_val, self.dl_test = self.get_basic_generators()
                 if self.unpack_data:
                     print("unpacking dataset")
                     unpack_dataset(self.folder_with_preprocessed_data)
@@ -197,12 +197,31 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
         self.network.do_ds = ds
         return ret
 
+    def test(self, do_mirroring: bool = True, use_sliding_window: bool = True,
+             step_size: float = 0.5, save_softmax: bool = True, use_gaussian: bool = True, overwrite: bool = True,
+             test_folder_name: str = 'test_raw', debug: bool = False, all_in_gpu: bool = False,
+             segmentation_export_kwargs: dict = None, run_postprocessing_on_folds: bool = True):
+        """
+        We need to wrap this because we need to enforce self.network.do_ds = False for prediction
+        """
+        ds = self.network.do_ds
+        self.network.do_ds = False
+        ret = super().test(do_mirroring=do_mirroring, use_sliding_window=use_sliding_window, step_size=step_size,
+                           save_softmax=save_softmax, use_gaussian=use_gaussian,
+                           overwrite=overwrite, test_folder_name=test_folder_name, debug=debug,
+                           all_in_gpu=all_in_gpu, segmentation_export_kwargs=segmentation_export_kwargs,
+                           run_postprocessing_on_folds=run_postprocessing_on_folds)
+
+        self.network.do_ds = ds
+        return ret
+
     def predict_preprocessed_data_return_seg_and_softmax(self, data: np.ndarray, do_mirroring: bool = True,
                                                          mirror_axes: Tuple[int] = None,
                                                          use_sliding_window: bool = True, step_size: float = 0.5,
                                                          use_gaussian: bool = True, pad_border_mode: str = 'constant',
                                                          pad_kwargs: dict = None, all_in_gpu: bool = False,
-                                                         verbose: bool = True, mixed_precision=True) -> Tuple[np.ndarray, np.ndarray]:
+                                                         verbose: bool = True, mixed_precision=True) -> Tuple[
+        np.ndarray, np.ndarray]:
         """
         We need to wrap this because we need to enforce self.network.do_ds = False for prediction
         """

@@ -15,7 +15,7 @@
 
 import argparse
 from batchgenerators.utilities.file_and_folder_operations import *
-from nnunet.run.default_configuration import get_default_configuration
+from nnunet.run.default_configuration import get_default_configuration_my
 from nnunet.paths import default_plans_identifier
 from nnunet.run.load_pretrained_weights import load_pretrained_weights
 from nnunet.training.cascade_stuff.predict_next_stage import predict_next_stage
@@ -31,7 +31,10 @@ def main():
     parser.add_argument("network_trainer")
     parser.add_argument("task", help="can be task name or task id")
     parser.add_argument("fold", help='0, 1, ..., 5 or \'all\'')
+    parser.add_argument("--exp_name", action="store_true", default='test')
     parser.add_argument("-val", "--validation_only", help="use this if you want to only run the validation",
+                        action="store_true")
+    parser.add_argument("-test", "--test_only", help="use this if you want to only run the test (test dataset used)",
                         action="store_true")
     parser.add_argument("-c", "--continue_training", help="use this if you want to continue a training",
                         action="store_true")
@@ -61,6 +64,8 @@ def main():
     parser.add_argument("--fp32", required=False, default=False, action="store_true",
                         help="disable mixed precision training and run old school fp32")
     parser.add_argument("--val_folder", required=False, default="validation_raw",
+                        help="name of the validation folder. No need to use this for most people")
+    parser.add_argument("--val_folder", required=False, default="test_raw",
                         help="name of the validation folder. No need to use this for most people")
     parser.add_argument("--disable_saving", required=False, action='store_true',
                         help="If set nnU-Net will not save any parameter files (except a temporary checkpoint that "
@@ -93,10 +98,12 @@ def main():
     args = parser.parse_args()
 
     task = args.task
+    exp_name = args.exp_name
     fold = args.fold
     network = args.network
     network_trainer = args.network_trainer
     validation_only = args.validation_only
+    test_only = args.test_only
     plans_identifier = args.p
     find_lr = args.find_lr
     disable_postprocessing_on_folds = args.disable_postprocessing_on_folds
@@ -111,6 +118,7 @@ def main():
     run_mixed_precision = not fp32
 
     val_folder = args.val_folder
+    test_folder = args.test_folder
     # interp_order = args.interp_order
     # interp_order_z = args.interp_order_z
     # force_separate_z = args.force_separate_z
@@ -134,7 +142,7 @@ def main():
     #     raise ValueError("force_separate_z must be None, True or False. Given: %s" % force_separate_z)
 
     plans_file, output_folder_name, dataset_directory, batch_dice, stage, \
-    trainer_class = get_default_configuration(network, task, network_trainer, plans_identifier)
+    trainer_class = get_default_configuration_my(network, task, network_trainer, plans_identifier, exp_name=exp_name)
 
     if trainer_class is None:
         raise RuntimeError("Could not find trainer class in nnunet.training.network_training")
@@ -153,19 +161,19 @@ def main():
                             deterministic=deterministic,
                             fp16=run_mixed_precision)
     if args.disable_saving:
-        trainer.save_final_checkpoint = False # whether or not to save the final checkpoint
+        trainer.save_final_checkpoint = False  # whether or not to save the final checkpoint
         trainer.save_best_checkpoint = False  # whether or not to save the best checkpoint according to
         # self.best_val_eval_criterion_MA
         trainer.save_intermediate_checkpoints = True  # whether or not to save checkpoint_latest. We need that in case
         # the training chashes
         trainer.save_latest_only = True  # if false it will not store/overwrite _latest but separate files each
 
-    trainer.initialize(not validation_only)
+    trainer.initialize(not validation_only and not test_only)
 
     if find_lr:
         trainer.find_lr()
     else:
-        if not validation_only:
+        if not validation_only and not test_only:
             if args.continue_training:
                 # -c was set, continue a previous training and ignore pretrained weights
                 trainer.load_latest_checkpoint()
@@ -186,7 +194,12 @@ def main():
         trainer.network.eval()
 
         # predict validation
-        trainer.validate(save_softmax=args.npz, validation_folder_name=val_folder,
+        if not test_only:
+            trainer.validate(save_softmax=args.npz, validation_folder_name=val_folder,
+                             run_postprocessing_on_folds=not disable_postprocessing_on_folds,
+                             overwrite=args.val_disable_overwrite)
+        elif test_only:
+            trainer.test(save_softmax=args.npz, validation_folder_name=test_folder,
                          run_postprocessing_on_folds=not disable_postprocessing_on_folds,
                          overwrite=args.val_disable_overwrite)
 
