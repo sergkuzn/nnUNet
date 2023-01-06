@@ -19,7 +19,7 @@ from nnunet.run.default_configuration import get_default_configuration_my
 from nnunet.paths import default_plans_identifier
 from nnunet.run.load_pretrained_weights import load_pretrained_weights
 from nnunet.training.cascade_stuff.predict_next_stage import predict_next_stage
-from nnunet.training.network_training.nnUNetTrainer import nnUNetTrainer
+from nnunet.training.network_training.nnUNetTrainer_my import nnUNetTrainerMy
 from nnunet.training.network_training.nnUNetTrainerCascadeFullRes import nnUNetTrainerCascadeFullRes
 from nnunet.training.network_training.nnUNetTrainerV2_CascadeFullRes import nnUNetTrainerV2CascadeFullRes
 from nnunet.utilities.task_name_id_conversion import convert_id_to_task_name
@@ -30,7 +30,6 @@ def main():
     parser.add_argument("network")
     parser.add_argument("network_trainer")
     parser.add_argument("task", help="can be task name or task id")
-    parser.add_argument("fold", help='0, 1, ..., 5 or \'all\'')
     parser.add_argument("--exp_name", action="store_true", default='test')
     parser.add_argument("-val", "--validation_only", help="use this if you want to only run the validation",
                         action="store_true")
@@ -99,7 +98,6 @@ def main():
 
     task = args.task
     exp_name = args.exp_name
-    fold = args.fold
     network = args.network
     network_trainer = args.network_trainer
     validation_only = args.validation_only
@@ -123,14 +121,11 @@ def main():
     # interp_order_z = args.interp_order_z
     # force_separate_z = args.force_separate_z
 
+    print('Save softmax: ', args.npz)
+
     if not task.startswith("Task"):
         task_id = int(task)
         task = convert_id_to_task_name(task_id)
-
-    if fold == 'all':
-        pass
-    else:
-        fold = int(fold)
 
     # if force_separate_z == "None":
     #     force_separate_z = None
@@ -154,9 +149,9 @@ def main():
             "nnUNetTrainerCascadeFullRes"
     else:
         assert issubclass(trainer_class,
-                          nnUNetTrainer), "network_trainer was found but is not derived from nnUNetTrainer"
+                          nnUNetTrainerMy), "network_trainer was found but is not derived from nnUNetTrainer"
 
-    trainer = trainer_class(plans_file, fold, output_folder=output_folder_name, dataset_directory=dataset_directory,
+    trainer = trainer_class(plans_file, output_folder=output_folder_name, dataset_directory=dataset_directory,
                             batch_dice=batch_dice, stage=stage, unpack_data=decompress_data,
                             deterministic=deterministic,
                             fp16=run_mixed_precision)
@@ -199,7 +194,7 @@ def main():
                              run_postprocessing_on_folds=not disable_postprocessing_on_folds,
                              overwrite=args.val_disable_overwrite)
         elif test_only:
-            trainer.test(save_softmax=args.npz, validation_folder_name=test_folder,
+            trainer.test(save_softmax=args.npz, test_folder_name=test_folder,
                          run_postprocessing_on_folds=not disable_postprocessing_on_folds,
                          overwrite=args.val_disable_overwrite)
 

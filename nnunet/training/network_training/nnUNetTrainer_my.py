@@ -47,7 +47,7 @@ matplotlib.use("agg")
 
 
 class nnUNetTrainerMy(NetworkTrainerMy):
-    def __init__(self, plans_file, fold, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
+    def __init__(self, plans_file, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
                  unpack_data=True, deterministic=True, fp16=False):
         """
         :param deterministic:
@@ -75,7 +75,7 @@ class nnUNetTrainerMy(NetworkTrainerMy):
         """
         super().__init__(deterministic, fp16)
         self.unpack_data = unpack_data
-        self.init_args = (plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
+        self.init_args = (plans_file, output_folder, dataset_directory, batch_dice, stage, unpack_data,
                           deterministic, fp16)
         # set through arguments from init
         self.stage = stage
@@ -84,7 +84,6 @@ class nnUNetTrainerMy(NetworkTrainerMy):
         self.output_folder = output_folder
         self.dataset_directory = dataset_directory
         self.output_folder_base = self.output_folder
-        self.fold = fold
 
         self.plans = None
 
@@ -119,7 +118,6 @@ class nnUNetTrainerMy(NetworkTrainerMy):
         self.inference_pad_border_mode = "constant"
         self.inference_pad_kwargs = {'constant_values': 0}
 
-        self.update_fold(fold)
         self.pad_all_sides = None
 
         self.lr_scheduler_eps = 1e-3
@@ -132,24 +130,6 @@ class nnUNetTrainerMy(NetworkTrainerMy):
         self.conv_per_stage = None
         self.regions_class_order = None
 
-    def update_fold(self, fold):
-        """
-        used to swap between folds for inference (ensemble of models from cross-validation)
-        DO NOT USE DURING TRAINING AS THIS WILL NOT UPDATE THE DATASET SPLIT AND THE DATA AUGMENTATION GENERATORS
-        :param fold:
-        :return:
-        """
-        if fold is not None:
-            if isinstance(fold, str):
-                assert fold == "all", "if self.fold is a string then it must be \'all\'"
-                if self.output_folder.endswith("%s" % str(self.fold)):
-                    self.output_folder = self.output_folder_base
-                self.output_folder = join(self.output_folder, "%s" % str(fold))
-            else:
-                if self.output_folder.endswith("fold_%s" % str(self.fold)):
-                    self.output_folder = self.output_folder_base
-                self.output_folder = join(self.output_folder, "fold_%s" % str(fold))
-            self.fold = fold
 
     def setup_DA_params(self):
         if self.threeD:
