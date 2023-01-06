@@ -66,8 +66,8 @@ def main():
                         help="disable mixed precision training and run old school fp32")
     parser.add_argument("--val_folder", required=False, default="validation_raw",
                         help="name of the validation folder. No need to use this for most people")
-    parser.add_argument("--val_folder", required=False, default="test_raw",
-                        help="name of the validation folder. No need to use this for most people")
+    parser.add_argument("--test_folder", required=False, default="test_raw",
+                        help="name of the test folder. No need to use this for most people")
     parser.add_argument("--disable_saving", required=False, action='store_true',
                         help="If set nnU-Net will not save any parameter files (except a temporary checkpoint that "
                              "will be removed at the end of the training). Useful for development when you are "
