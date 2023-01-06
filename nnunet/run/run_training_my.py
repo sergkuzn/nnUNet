@@ -35,6 +35,8 @@ def main():
                         action="store_true")
     parser.add_argument("-test", "--test_only", help="use this if you want to only run the test (test dataset used)",
                         action="store_true")
+    parser.add_argument("--epochs", default=500,
+                        action="store_true")
     parser.add_argument("-c", "--continue_training", help="use this if you want to continue a training",
                         action="store_true")
     parser.add_argument("-p", help="plans identifier. Only change this if you created a custom experiment planner",
@@ -102,6 +104,7 @@ def main():
     network_trainer = args.network_trainer
     validation_only = args.validation_only
     test_only = args.test_only
+    max_num_epochs = args.epochs
     plans_identifier = args.p
     find_lr = args.find_lr
     disable_postprocessing_on_folds = args.disable_postprocessing_on_folds
@@ -142,16 +145,17 @@ def main():
     if trainer_class is None:
         raise RuntimeError("Could not find trainer class in nnunet.training.network_training")
 
-    if network == "3d_cascade_fullres":
-        assert issubclass(trainer_class, (nnUNetTrainerCascadeFullRes, nnUNetTrainerV2CascadeFullRes)), \
-            "If running 3d_cascade_fullres then your " \
-            "trainer class must be derived from " \
-            "nnUNetTrainerCascadeFullRes"
-    else:
-        assert issubclass(trainer_class,
-                          nnUNetTrainerMy), "network_trainer was found but is not derived from nnUNetTrainer"
+    # if network == "3d_cascade_fullres":
+    #     assert issubclass(trainer_class, (nnUNetTrainerCascadeFullRes, nnUNetTrainerV2CascadeFullRes)), \
+    #         "If running 3d_cascade_fullres then your " \
+    #         "trainer class must be derived from " \
+    #         "nnUNetTrainerCascadeFullRes"
+    # else:
+    #     assert issubclass(trainer_class,
+    #                       nnUNetTrainerMy), "network_trainer was found but is not derived from nnUNetTrainer"
 
-    trainer = trainer_class(plans_file, output_folder=output_folder_name, dataset_directory=dataset_directory,
+    trainer = trainer_class(plans_file, max_num_epochs=max_num_epochs,
+                            output_folder=output_folder_name, dataset_directory=dataset_directory,
                             batch_dice=batch_dice, stage=stage, unpack_data=decompress_data,
                             deterministic=deterministic,
                             fp16=run_mixed_precision)

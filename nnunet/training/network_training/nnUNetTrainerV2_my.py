@@ -41,10 +41,12 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
     Info for Fabian: same as internal nnUNetTrainerV2_2
     """
 
-    def __init__(self, plans_file, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
+    def __init__(self, plans_file, max_num_epochs: int = 500,
+                 output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
                  unpack_data=True, deterministic=True, fp16=False):
         super().__init__(plans_file, output_folder, dataset_directory, batch_dice, stage, unpack_data,
                          deterministic, fp16)
+        self.max_num_epochs = max_num_epochs
         self.max_num_epochs = 1000
         self.initial_lr = 1e-2
         self.deep_supervision_scales = None
@@ -290,7 +292,7 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
 
         return l.detach().cpu().numpy()
 
-# Modified in the parent class
+    # Modified in the parent class
     # def do_split(self):
     #     """
     #     The default split is a 5 fold CV on all available training cases. nnU-Net will create a split (it is seeded,
