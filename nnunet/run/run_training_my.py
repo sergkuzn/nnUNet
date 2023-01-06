@@ -30,13 +30,13 @@ def main():
     parser.add_argument("network")
     parser.add_argument("network_trainer")
     parser.add_argument("task", help="can be task name or task id")
-    parser.add_argument("--exp_name", action="store_true", default='test')
+    parser.add_argument("--exp_name", type=str, default='test')
     parser.add_argument("-val", "--validation_only", help="use this if you want to only run the validation",
                         action="store_true")
     parser.add_argument("-test", "--test_only", help="use this if you want to only run the test (test dataset used)",
                         action="store_true")
     parser.add_argument("--epochs", default=500,
-                        action="store_true")
+                        type=int)
     parser.add_argument("-c", "--continue_training", help="use this if you want to continue a training",
                         action="store_true")
     parser.add_argument("-p", help="plans identifier. Only change this if you created a custom experiment planner",
