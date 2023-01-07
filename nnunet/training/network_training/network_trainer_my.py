@@ -79,7 +79,6 @@ class NetworkTrainerMy(object):
 
         ################# SET THESE IN INIT ################################################
         self.output_folder = None
-        self.fold = None
         self.loss = None
         self.dataset_directory = None
 
@@ -146,43 +145,43 @@ class NetworkTrainerMy(object):
     def load_dataset(self):
         pass
 
-    def do_split_old(self):
-        """
-        This is a suggestion for if your dataset is a dictionary (my personal standard)
-        :return:
-        """
-        splits_file = join(self.dataset_directory, "splits_final.pkl")
-        if not isfile(splits_file):
-            self.print_to_log_file("Creating new split...")
-            splits = []
-            all_keys_sorted = np.sort(list(self.dataset.keys()))
-            kfold = KFold(n_splits=5, shuffle=True, random_state=12345)
-            for i, (train_idx, test_idx) in enumerate(kfold.split(all_keys_sorted)):
-                train_keys = np.array(all_keys_sorted)[train_idx]
-                test_keys = np.array(all_keys_sorted)[test_idx]
-                splits.append(OrderedDict())
-                splits[-1]['train'] = train_keys
-                splits[-1]['val'] = test_keys
-            save_pickle(splits, splits_file)
-
-        splits = load_pickle(splits_file)
-
-        if self.fold == "all":
-            tr_keys = val_keys = list(self.dataset.keys())
-        else:
-            tr_keys = splits[self.fold]['train']
-            val_keys = splits[self.fold]['val']
-
-        tr_keys.sort()
-        val_keys.sort()
-
-        self.dataset_tr = OrderedDict()
-        for i in tr_keys:
-            self.dataset_tr[i] = self.dataset[i]
-
-        self.dataset_val = OrderedDict()
-        for i in val_keys:
-            self.dataset_val[i] = self.dataset[i]
+    # def do_split_old(self):
+    #     """
+    #     This is a suggestion for if your dataset is a dictionary (my personal standard)
+    #     :return:
+    #     """
+    #     splits_file = join(self.dataset_directory, "splits_final.pkl")
+    #     if not isfile(splits_file):
+    #         self.print_to_log_file("Creating new split...")
+    #         splits = []
+    #         all_keys_sorted = np.sort(list(self.dataset.keys()))
+    #         kfold = KFold(n_splits=5, shuffle=True, random_state=12345)
+    #         for i, (train_idx, test_idx) in enumerate(kfold.split(all_keys_sorted)):
+    #             train_keys = np.array(all_keys_sorted)[train_idx]
+    #             test_keys = np.array(all_keys_sorted)[test_idx]
+    #             splits.append(OrderedDict())
+    #             splits[-1]['train'] = train_keys
+    #             splits[-1]['val'] = test_keys
+    #         save_pickle(splits, splits_file)
+    #
+    #     splits = load_pickle(splits_file)
+    #
+    #     if self.fold == "all":
+    #         tr_keys = val_keys = list(self.dataset.keys())
+    #     else:
+    #         tr_keys = splits[self.fold]['train']
+    #         val_keys = splits[self.fold]['val']
+    #
+    #     tr_keys.sort()
+    #     val_keys.sort()
+    #
+    #     self.dataset_tr = OrderedDict()
+    #     for i in tr_keys:
+    #         self.dataset_tr[i] = self.dataset[i]
+    #
+    #     self.dataset_val = OrderedDict()
+    #     for i in val_keys:
+    #         self.dataset_val[i] = self.dataset[i]
 
     def do_split(self):
         """
@@ -320,8 +319,6 @@ class NetworkTrainerMy(object):
         self.print_to_log_file("done, saving took %.2f seconds" % (time() - start_time))
 
     def load_best_checkpoint(self, train=True):
-        if self.fold is None:
-            raise RuntimeError("Cannot load best checkpoint if self.fold is None")
         if isfile(join(self.output_folder, "model_best.model")):
             self.load_checkpoint(join(self.output_folder, "model_best.model"), train=train)
         else:
