@@ -190,7 +190,7 @@ class NetworkTrainerMy(object):
         """
         splits_file = join(self.dataset_directory, "splits.pkl")
         if not isfile(splits_file):
-            raise FileExistsError('File with train-val-test splits myst exist, but not found!')
+            raise FileExistsError('File with train-val-test splits must exist, but not found!')
 
         self.print_to_log_file("Splits file found.")
 
