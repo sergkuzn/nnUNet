@@ -18,7 +18,7 @@ from typing import Tuple
 
 import numpy as np
 import torch
-from nnunet.training.data_augmentation.data_augmentation_moreDA import get_moreDA_augmentation
+from nnunet.training.data_augmentation.data_augmentation_moreDA import get_moreDA_augmentation, get_moreDA_augmentation_unlabeled
 from nnunet.training.loss_functions.deep_supervision import MultipleOutputLoss2
 from nnunet.utilities.to_torch import maybe_to_torch, to_cuda
 from nnunet.network_architecture.generic_UNet import Generic_UNet
@@ -27,16 +27,17 @@ from nnunet.network_architecture.neural_network import SegmentationNetwork
 from nnunet.training.data_augmentation.default_data_augmentation import default_2D_augmentation_params, \
     get_patch_size, default_3D_augmentation_params
 from nnunet.training.dataloading.dataset_loading import unpack_dataset
-from nnunet.training.network_training.nnUNetTrainer_my import nnUNetTrainerMy
+from nnunet.training.network_training.nnUNetTrainer_fixmatch import nnUNetTrainerFixmatch
 from nnunet.utilities.nd_softmax import softmax_helper
 from sklearn.model_selection import KFold
 from torch import nn
 from torch.cuda.amp import autocast
 from nnunet.training.learning_rate.poly_lr import poly_lr
 from batchgenerators.utilities.file_and_folder_operations import *
+from copy import deepcopy
 
 
-class nnUNetTrainerV2My(nnUNetTrainerMy):
+class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
     """
     Info for Fabian: same as internal nnUNetTrainerV2_2
     """
@@ -52,6 +53,7 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
         self.ds_loss_weights = None
 
         self.pin_memory = True
+        self.data_aug_params_weak = None
 
     def initialize(self, training=True, force_load_plans=False):
         """
@@ -93,7 +95,7 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
             self.folder_with_preprocessed_data = join(self.dataset_directory, self.plans['data_identifier'] +
                                                       "_stage%d" % self.stage)
             if training:
-                self.dl_tr, self.dl_val, self.dl_test = self.get_basic_generators()
+                self.dl_tr, self.dl_tr_un, self.dl_val, self.dl_test = self.get_basic_generators()
                 if self.unpack_data:
                     print("unpacking dataset")
                     unpack_dataset(self.folder_with_preprocessed_data)
@@ -112,6 +114,16 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
                     pin_memory=self.pin_memory,
                     use_nondetMultiThreadedAugmenter=False
                 )
+                self.tr_un_gen = get_moreDA_augmentation_unlabeled(
+                    self.dl_tr_un,
+                    self.data_aug_params_weak[
+                        'patch_size_for_spatialtransform'],
+                    self.data_aug_params_weak,
+                    deep_supervision_scales=self.deep_supervision_scales,
+                    pin_memory=self.pin_memory,
+                    use_nondetMultiThreadedAugmenter=False
+                )
+
                 self.print_to_log_file("TRAINING KEYS:\n %s" % (str(self.dataset_tr.keys())),
                                        also_print_to_console=False)
                 self.print_to_log_file("VALIDATION KEYS:\n %s" % (str(self.dataset_val.keys())),
@@ -291,72 +303,6 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
 
         return l.detach().cpu().numpy()
 
-    # Modified in the parent class
-    # def do_split(self):
-    #     """
-    #     The default split is a 5 fold CV on all available training cases. nnU-Net will create a split (it is seeded,
-    #     so always the same) and save it as splits_final.pkl file in the preprocessed data directory.
-    #     Sometimes you may want to create your own split for various reasons. For this you will need to create your own
-    #     splits_final.pkl file. If this file is present, nnU-Net is going to use it and whatever splits are defined in
-    #     it. You can create as many splits in this file as you want. Note that if you define only 4 splits (fold 0-3)
-    #     and then set fold=4 when training (that would be the fifth split), nnU-Net will print a warning and proceed to
-    #     use a random 80:20 data split.
-    #     :return:
-    #     """
-    #     if self.fold == "all":
-    #         # if fold==all then we use all images for training and validation
-    #         tr_keys = val_keys = list(self.dataset.keys())
-    #     else:
-    #         splits_file = join(self.dataset_directory, "splits_final.pkl")
-    #
-    #         # if the split file does not exist we need to create it
-    #         if not isfile(splits_file):
-    #             self.print_to_log_file("Creating new 5-fold cross-validation split...")
-    #             splits = []
-    #             all_keys_sorted = np.sort(list(self.dataset.keys()))
-    #             kfold = KFold(n_splits=5, shuffle=True, random_state=12345)
-    #             for i, (train_idx, test_idx) in enumerate(kfold.split(all_keys_sorted)):
-    #                 train_keys = np.array(all_keys_sorted)[train_idx]
-    #                 test_keys = np.array(all_keys_sorted)[test_idx]
-    #                 splits.append(OrderedDict())
-    #                 splits[-1]['train'] = train_keys
-    #                 splits[-1]['val'] = test_keys
-    #             save_pickle(splits, splits_file)
-    #
-    #         else:
-    #             self.print_to_log_file("Using splits from existing split file:", splits_file)
-    #             splits = load_pickle(splits_file)
-    #             self.print_to_log_file("The split file contains %d splits." % len(splits))
-    #
-    #         self.print_to_log_file("Desired fold for training: %d" % self.fold)
-    #         if self.fold < len(splits):
-    #             tr_keys = splits[self.fold]['train']
-    #             val_keys = splits[self.fold]['val']
-    #             self.print_to_log_file("This split has %d training and %d validation cases."
-    #                                    % (len(tr_keys), len(val_keys)))
-    #         else:
-    #             self.print_to_log_file("INFO: You requested fold %d for training but splits "
-    #                                    "contain only %d folds. I am now creating a "
-    #                                    "random (but seeded) 80:20 split!" % (self.fold, len(splits)))
-    #             # if we request a fold that is not in the split file, create a random 80:20 split
-    #             rnd = np.random.RandomState(seed=12345 + self.fold)
-    #             keys = np.sort(list(self.dataset.keys()))
-    #             idx_tr = rnd.choice(len(keys), int(len(keys) * 0.8), replace=False)
-    #             idx_val = [i for i in range(len(keys)) if i not in idx_tr]
-    #             tr_keys = [keys[i] for i in idx_tr]
-    #             val_keys = [keys[i] for i in idx_val]
-    #             self.print_to_log_file("This random 80:20 split has %d training and %d validation cases."
-    #                                    % (len(tr_keys), len(val_keys)))
-    #
-    #     tr_keys.sort()
-    #     val_keys.sort()
-    #     self.dataset_tr = OrderedDict()
-    #     for i in tr_keys:
-    #         self.dataset_tr[i] = self.dataset[i]
-    #     self.dataset_val = OrderedDict()
-    #     for i in val_keys:
-    #         self.dataset_val[i] = self.dataset[i]
-
     def setup_DA_params(self):
         """
         - we increase roation angle from [-15, 15] to [-30, 30]
@@ -408,6 +354,17 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
         self.data_aug_params['patch_size_for_spatialtransform'] = self.patch_size
 
         self.data_aug_params["num_cached_per_thread"] = 2
+
+        # Weak Augmentation
+        self.data_aug_params_weak = deepcopy(self.data_aug_params)
+        self.data_aug_params_weak['do_elastic'] = False
+        self.data_aug_params_weak["do_scaling"] = False
+        default_2D_augmentation_params["rotation_x"] = (-30. / 360 * 2. * np.pi, 30. / 360 * 2. * np.pi)
+        self.data_aug_params_weak["do_gamma"] = False
+        self.basic_generator_patch_size_weak = get_patch_size(self.patch_size, self.data_aug_params['rotation_x'],
+                                                              self.data_aug_params['rotation_y'],
+                                                              self.data_aug_params['rotation_z'],
+                                                              self.data_aug_params['scale_range'])
 
     def maybe_update_lr(self, epoch=None):
         """
