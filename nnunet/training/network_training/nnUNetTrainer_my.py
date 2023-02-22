@@ -48,7 +48,7 @@ matplotlib.use("agg")
 
 class nnUNetTrainerMy(NetworkTrainerMy):
     def __init__(self, plans_file, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
-                 unpack_data=True, deterministic=True, fp16=False):
+                 unpack_data=True, deterministic=True, fp16=False, weight_ce=1, weight_dice=1):
         """
         :param deterministic:
         :param fold: can be either [0 ... 5) for cross-validation, 'all' to train on all available training data or
@@ -76,7 +76,7 @@ class nnUNetTrainerMy(NetworkTrainerMy):
         super().__init__(deterministic, fp16)
         self.unpack_data = unpack_data
         self.init_args = (plans_file, output_folder, dataset_directory, batch_dice, stage, unpack_data,
-                          deterministic, fp16)
+                          deterministic, fp16, weight_ce, weight_dice)
         # set through arguments from init
         self.stage = stage
         self.experiment_name = self.__class__.__name__
@@ -105,7 +105,8 @@ class nnUNetTrainerMy(NetworkTrainerMy):
         self.basic_generator_patch_size = self.data_aug_params = self.transpose_forward = self.transpose_backward = None
 
         self.batch_dice = batch_dice
-        self.loss = DC_and_CE_loss({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False}, {})
+        self.loss = DC_and_CE_loss({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False}, {},
+                                   weight_ce=weight_ce, weight_dice=weight_dice)
 
         self.online_eval_foreground_dc = []
         self.online_eval_tp = []
