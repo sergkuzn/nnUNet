@@ -358,8 +358,9 @@ class DC_and_CE_loss(nn.Module):
                 class_count = [(target0 == i).sum().cpu().item() for i in range(num_classes)]
                 print(class_count)
                 weights = np.array([1/count if count != 0 else 0 for count in class_count], dtype=float)
+                weights /= weights.sum()
                 print(weights)
-                weights = torch.from_numpy(weights).to(target0.device)
+                weights = torch.from_numpy(weights).to(target0.device).float()
                 print(weights)
 
                 ce = RobustCrossEntropyLoss(weight=weights)
