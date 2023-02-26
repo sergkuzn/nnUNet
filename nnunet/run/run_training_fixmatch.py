@@ -43,6 +43,7 @@ def main():
                         type=int)
     parser.add_argument("--weight_dice", default=1,
                         type=int)
+    parser.add_argument("--weighted_ce", required=False, default=False, action="store_true")
     parser.add_argument("-c", "--continue_training", help="use this if you want to continue a training",
                         action="store_true")
     parser.add_argument("-p", help="plans identifier. Only change this if you created a custom experiment planner",
@@ -128,6 +129,8 @@ def main():
     weight_ce = args.weight_ce
     weight_dice = args.weight_dice
 
+    weighted_ce = args.weighted_ce
+
     val_folder = args.val_folder
     test_folder = args.test_folder
     # interp_order = args.interp_order
@@ -167,7 +170,7 @@ def main():
                             batch_dice=batch_dice, stage=stage, unpack_data=decompress_data,
                             deterministic=deterministic,
                             fp16=run_mixed_precision,
-                            weight_ce=weight_ce, weight_dice=weight_dice)
+                            weight_ce=weight_ce, weight_dice=weight_dice, weighted_ce=weighted_ce)
     if args.disable_saving:
         trainer.save_final_checkpoint = False  # whether or not to save the final checkpoint
         trainer.save_best_checkpoint = False  # whether or not to save the best checkpoint according to

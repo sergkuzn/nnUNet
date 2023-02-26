@@ -44,9 +44,9 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
 
     def __init__(self, plans_file, max_num_epochs: int = 200, threshold=0.8,
                  output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
-                 unpack_data=True, deterministic=True, fp16=False, weight_ce=1, weight_dice=1):
+                 unpack_data=True, deterministic=True, fp16=False, weight_ce=1, weight_dice=1, weighted_ce=False):
         super().__init__(plans_file, output_folder, dataset_directory, batch_dice, stage, unpack_data,
-                         deterministic, fp16, weight_ce, weight_dice)
+                         deterministic, fp16, weight_ce, weight_dice, weighted_ce=False)
         self.max_num_epochs = max_num_epochs
         self.initial_lr = 1e-2
         self.deep_supervision_scales = None

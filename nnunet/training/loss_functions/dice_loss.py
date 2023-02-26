@@ -301,7 +301,7 @@ class SoftDiceLossSquared(nn.Module):
 
 class DC_and_CE_loss(nn.Module):
     def __init__(self, soft_dice_kwargs, ce_kwargs, aggregate="sum", square_dice=False, weight_ce=1, weight_dice=1,
-                 log_dice=False, ignore_label=None):
+                 log_dice=False, ignore_label=None, weighted_ce=False):
         """
         CAREFUL. Weights for CE and Dice do not need to sum to one. You can set whatever you want.
         :param soft_dice_kwargs:
@@ -320,6 +320,8 @@ class DC_and_CE_loss(nn.Module):
         self.weight_ce = weight_ce
         self.aggregate = aggregate
         self.ce = RobustCrossEntropyLoss(**ce_kwargs)
+
+        self.weighted_ce = weighted_ce
 
         self.ignore_label = ignore_label
 
@@ -347,7 +349,13 @@ class DC_and_CE_loss(nn.Module):
         if self.log_dice:
             dc_loss = -torch.log(-dc_loss)
 
-        ce_loss = self.ce(net_output, target[:, 0].long()) if self.weight_ce != 0 else 0
+        if self.weighted_ce:
+            print('net_output', net_output.shape)
+            print('target', target.shape)
+            print('target0', target[:, 0].shape)
+            ce = RobustCrossEntropyLoss()
+        else:
+            ce_loss = self.ce(net_output, target[:, 0].long()) if self.weight_ce != 0 else 0
         if self.ignore_label is not None:
             ce_loss *= mask[:, 0]
             ce_loss = ce_loss.sum() / mask.sum()
