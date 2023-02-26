@@ -355,7 +355,7 @@ class DC_and_CE_loss(nn.Module):
             if self.weighted_ce:
                 target0 = target[:, 0].long()  # batch x h x w
                 num_classes = net_output.shape[1]  # batch x num_classes x h x w
-                class_count = [(target0 == i).sum().detatch().cpu().item() for i in range(num_classes)]
+                class_count = [(target0 == i).sum().cpu().item() for i in range(num_classes)]
                 print(class_count)
                 weights = np.array([1/count if count != 0 else 0 for count in class_count], dtype=float)
                 print(weights)
