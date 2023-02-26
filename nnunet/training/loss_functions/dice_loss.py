@@ -349,13 +349,23 @@ class DC_and_CE_loss(nn.Module):
         if self.log_dice:
             dc_loss = -torch.log(-dc_loss)
 
-        if self.weighted_ce:
-            print('net_output', net_output.shape)
-            print('target', target.shape)
-            print('target0', target[:, 0].shape)
-            ce = RobustCrossEntropyLoss()
+        if self.weight_ce == 0:
+            ce_loss = 0
         else:
-            ce_loss = self.ce(net_output, target[:, 0].long()) if self.weight_ce != 0 else 0
+            if self.weighted_ce:
+                target0 = target[:, 0].long()  # batch x h x w
+                num_classes = net_output.shape[1]  # batch x num_classes x h x w
+                class_count = [(target0 == i).sum().detatch().cpu().item() for i in range(num_classes)]
+                print(class_count)
+                weights = np.array([1/count if count != 0 else 0 for count in class_count], dtype=float)
+                print(weights)
+                weights = torch.from_numpy(weights).to(target0.device)
+                print(weights)
+
+                ce = RobustCrossEntropyLoss(weight=weights)
+                ce_loss = ce(net_output, target0)
+            else:
+                ce_loss = self.ce(net_output, target[:, 0].long())
         if self.ignore_label is not None:
             ce_loss *= mask[:, 0]
             ce_loss = ce_loss.sum() / mask.sum()
