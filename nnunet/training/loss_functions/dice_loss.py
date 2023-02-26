@@ -322,6 +322,7 @@ class DC_and_CE_loss(nn.Module):
         self.ce = RobustCrossEntropyLoss(**ce_kwargs)
 
         self.weighted_ce = weighted_ce
+        print('weighted_ce: ', weighted_ce)
 
         self.ignore_label = ignore_label
 
