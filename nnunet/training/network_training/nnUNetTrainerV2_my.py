@@ -253,7 +253,7 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
         data = data_dict['data']
         target = data_dict['target']
 
-        print('Batch', np.unique(target.detach().cpu().numpy()))
+        print('Batch', [np.unique(t) for t in target])
 
         data = maybe_to_torch(data)
         target = maybe_to_torch(target)
