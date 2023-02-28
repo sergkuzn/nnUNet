@@ -260,6 +260,8 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
             data = to_cuda(data)
             target = to_cuda(target)
 
+        print('Batch', np.unique(target))
+
         self.optimizer.zero_grad()
 
         if self.fp16:
