@@ -660,6 +660,7 @@ class NetworkTrainerMy(object):
 
         data = maybe_to_torch(data)
         target = maybe_to_torch(target)
+        print('Batch', np.unique(target))
 
         if torch.cuda.is_available():
             data = to_cuda(data)
