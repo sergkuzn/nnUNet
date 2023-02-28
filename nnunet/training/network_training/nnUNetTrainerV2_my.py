@@ -253,6 +253,8 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
         data = data_dict['data']
         target = data_dict['target']
 
+        print('Batch', np.unique(target))
+
         data = maybe_to_torch(data)
         target = maybe_to_torch(target)
 
@@ -260,7 +262,6 @@ class nnUNetTrainerV2My(nnUNetTrainerMy):
             data = to_cuda(data)
             target = to_cuda(target)
 
-        print('Batch', np.unique(target))
 
         self.optimizer.zero_grad()
 
