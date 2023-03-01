@@ -98,7 +98,7 @@ class nnUNetTrainerFixmatch(NetworkTrainerFixmatch):
 
         # set in self.initialize()
 
-        self.dl_tr = self.dl_val = self.dl_test, self.dl_tr_un = None
+        self.dl_tr = self.dl_val = self.dl_test = self.dl_tr_un = None
         self.dataset_unlabeled = None
 
         self.num_input_channels = self.num_classes = self.net_pool_per_axis = self.patch_size = self.batch_size = \
