@@ -38,7 +38,7 @@ from nnunet.postprocessing.connected_components import determine_postprocessing
 from nnunet.training.data_augmentation.default_data_augmentation import default_3D_augmentation_params, \
     default_2D_augmentation_params, get_default_augmentation, get_patch_size
 from nnunet.training.dataloading.dataset_loading import load_dataset, DataLoader3D, DataLoader2D, unpack_dataset
-from nnunet.training.loss_functions.dice_loss import DC_and_CE_loss
+from nnunet.training.loss_functions.dice_loss import DC_and_CE_loss, DC_and_CE_loss_unlabeled
 from nnunet.training.network_training.network_trainer_fixmatch import NetworkTrainerFixmatch
 from nnunet.utilities.nd_softmax import softmax_helper
 from nnunet.utilities.tensor_utilities import sum_tensor
@@ -110,6 +110,10 @@ class nnUNetTrainerFixmatch(NetworkTrainerFixmatch):
         self.batch_dice = batch_dice
         self.loss = DC_and_CE_loss({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False}, {},
                                    weight_ce=weight_ce, weight_dice=weight_dice, weighted_ce=weighted_ce)
+        self.loss_unlabeled = DC_and_CE_loss_unlabeled({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False},
+                                                       {},
+                                                       weight_ce=weight_ce, weight_dice=0,
+                                                       weighted_ce=weighted_ce)
 
         self.online_eval_foreground_dc = []
         self.online_eval_tp = []
@@ -393,9 +397,9 @@ class nnUNetTrainerFixmatch(NetworkTrainerFixmatch):
                                    oversample_foreground_percent=self.oversample_foreground_percent,
                                    pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
             dl_tr_un = DataLoader3D(self.dataset_unlabeled, self.patch_size, self.patch_size,
-                                   int(self.batch_size) // 2, False,
-                                   oversample_foreground_percent=self.oversample_foreground_percent,
-                                   pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
+                                    int(self.batch_size) // 2, False,
+                                    oversample_foreground_percent=self.oversample_foreground_percent,
+                                    pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
         else:
             dl_tr = DataLoader2D(self.dataset_tr, self.basic_generator_patch_size, self.patch_size, self.batch_size,
                                  oversample_foreground_percent=self.oversample_foreground_percent,

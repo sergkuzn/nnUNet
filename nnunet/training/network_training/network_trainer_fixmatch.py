@@ -81,6 +81,7 @@ class NetworkTrainerFixmatch(object):
         ################# SET THESE IN INIT ################################################
         self.output_folder = None
         self.loss = None
+        self.loss_unlabeled = None
         self.dataset_directory = None
 
         ################# SET THESE IN LOAD_DATASET OR DO_SPLIT ############################
@@ -494,13 +495,17 @@ class NetworkTrainerFixmatch(object):
                     for b in tbar:
                         tbar.set_description("Epoch {}/{}".format(self.epoch+1, self.max_num_epochs))
 
-                        l = self.run_iteration(self.tr_gen, self.tr_un_gen, True)
+                        l1 = self.run_iteration(self.tr_gen, True)
+                        l2 = self.run_iteration_unlabeled(self.tr_un_gen, True)
+                        l = l1 + l2
 
                         tbar.set_postfix(loss=l)
                         train_losses_epoch.append(l)
             else:
                 for _ in range(self.num_batches_per_epoch):
-                    l = self.run_iteration(self.tr_gen, self.tr_un_gen, True)
+                    l1 = self.run_iteration(self.tr_gen, True)
+                    l2 = self.run_iteration_unlabeled(self.tr_un_gen, True)
+                    l = l1 + l2
                     train_losses_epoch.append(l)
 
             self.all_tr_losses.append(np.mean(train_losses_epoch))
@@ -671,59 +676,50 @@ class NetworkTrainerFixmatch(object):
             self.train_loss_MA = self.train_loss_MA_alpha * self.train_loss_MA + (1 - self.train_loss_MA_alpha) * \
                                  self.all_tr_losses[-1]
 
-    def run_iteration(self, data_generator, data_generator_unlabeled, do_backprop=True, run_online_evaluation=False):
-        data_dict = next(data_generator)
-        data = data_dict['data']
-        target = data_dict['target']
-
-        data = maybe_to_torch(data)
-        target = maybe_to_torch(target)
-
-        if torch.cuda.is_available():
-            data = to_cuda(data)
-            target = to_cuda(target)
-
-        # Unlabeled
-        data_dict_un = next(data_generator_unlabeled)
-        data_un = data_dict_un['data']
-        # target_un = data_dict_un['target']  # not needed
-
-        data_un = maybe_to_torch(data_un)
-
-        if torch.cuda.is_available():
-            data_un = to_cuda(data_un)
-
-        self.optimizer.zero_grad()
-
-        if self.fp16:
-            with autocast():
-                output = self.network(data)
-                torch.save(output, 'out.pt')
-                print('Tensor saved.')
-                del data
-                l = self.loss(output, target)
-
-            if do_backprop:
-                self.amp_grad_scaler.scale(l).backward()
-                self.amp_grad_scaler.step(self.optimizer)
-                self.amp_grad_scaler.update()
-        else:
-            output = self.network(data)
-            torch.save(output, 'out.pt')
-            print('Tensor saved.')
-            del data
-            l = self.loss(output, target)
-
-            if do_backprop:
-                l.backward()
-                self.optimizer.step()
-
-        if run_online_evaluation:
-            self.run_online_evaluation(output, target)
-
-        del target
-
-        return l.detach().cpu().numpy()
+    # Overwritten in child class
+    # def run_iteration(self, data_generator, do_backprop=True, run_online_evaluation=False):
+    #     data_dict = next(data_generator)
+    #     data = data_dict['data']
+    #     target = data_dict['target']
+    #
+    #     data = maybe_to_torch(data)
+    #     target = maybe_to_torch(target)
+    #
+    #     if torch.cuda.is_available():
+    #         data = to_cuda(data)
+    #         target = to_cuda(target)
+    #
+    #     self.optimizer.zero_grad()
+    #
+    #     if self.fp16:
+    #         with autocast():
+    #             output = self.network(data)
+    #             torch.save(output, 'out.pt')
+    #             print('Tensor saved.')
+    #             del data
+    #             l = self.loss(output, target)
+    #
+    #         if do_backprop:
+    #             self.amp_grad_scaler.scale(l).backward()
+    #             self.amp_grad_scaler.step(self.optimizer)
+    #             self.amp_grad_scaler.update()
+    #     else:
+    #         output = self.network(data)
+    #         torch.save(output, 'out.pt')
+    #         print('Tensor saved.')
+    #         del data
+    #         l = self.loss(output, target)
+    #
+    #         if do_backprop:
+    #             l.backward()
+    #             self.optimizer.step()
+    #
+    #     if run_online_evaluation:
+    #         self.run_online_evaluation(output, target)
+    #
+    #     del target
+    #
+    #     return l.detach().cpu().numpy()
 
     def run_online_evaluation(self, *args, **kwargs):
         """

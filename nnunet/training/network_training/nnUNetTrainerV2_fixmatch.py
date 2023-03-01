@@ -18,7 +18,8 @@ from typing import Tuple
 
 import numpy as np
 import torch
-from nnunet.training.data_augmentation.data_augmentation_moreDA import get_moreDA_augmentation, get_moreDA_augmentation_unlabeled
+from nnunet.training.data_augmentation.data_augmentation_moreDA import get_moreDA_augmentation, \
+    get_moreDA_augmentation_unlabeled, get_moreDA_augmentation_weak
 from nnunet.training.loss_functions.deep_supervision import MultipleOutputLoss2
 from nnunet.utilities.to_torch import maybe_to_torch, to_cuda
 from nnunet.network_architecture.generic_UNet import Generic_UNet
@@ -105,19 +106,22 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
                         "INFO: Not unpacking data! Training may be slow due to that. Pray you are not using 2d or you "
                         "will wait all winter for your model to finish!")
 
-                self.tr_gen, self.val_gen = get_moreDA_augmentation(
+                self.tr_gen, self.val_gen = get_moreDA_augmentation_weak(
                     self.dl_tr, self.dl_val,
-                    self.data_aug_params[
+                    self.data_aug_params_weak[
                         'patch_size_for_spatialtransform'],
-                    self.data_aug_params,
+                    self.data_aug_params_weak,
                     deep_supervision_scales=self.deep_supervision_scales,
                     pin_memory=self.pin_memory,
                     use_nondetMultiThreadedAugmenter=False
                 )
                 self.tr_un_gen = get_moreDA_augmentation_unlabeled(
                     self.dl_tr_un,
+                    self.data_aug_params[
+                        'patch_size_for_spatialtransform'],
                     self.data_aug_params_weak[
                         'patch_size_for_spatialtransform'],
+                    self.data_aug_params,
                     self.data_aug_params_weak,
                     deep_supervision_scales=self.deep_supervision_scales,
                     pin_memory=self.pin_memory,
@@ -300,6 +304,58 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
             self.run_online_evaluation(output, target)
 
         del target
+
+        return l.detach().cpu().numpy()
+
+    def run_iteration_unlabeled(self, data_generator, do_backprop=True):
+        """
+        gradient clipping improves training stability
+
+        :param data_generator:
+        :param do_backprop:
+        :param run_online_evaluation:
+        :return:
+        """
+        data_dict = next(data_generator)
+        data = data_dict['data']
+
+        data_strong = [el[0] for el in data]
+        data_weak = [el[1] for el in data]
+
+        data_strong = maybe_to_torch(data_strong)
+        data_weak = maybe_to_torch(data_weak)
+
+        if torch.cuda.is_available():
+            data_strong = to_cuda(data_strong)
+            data_weak = to_cuda(data_weak)
+
+        self.optimizer.zero_grad()
+
+        if self.fp16:
+            with autocast():
+                output_strong = self.network(data_strong)
+                output_weak = self.network(data_weak)
+                del data_strong
+                del data_weak
+                l = self.loss_unlabeled(output_strong, output_weak)
+
+            if do_backprop:
+                self.amp_grad_scaler.scale(l).backward()
+                self.amp_grad_scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 12)
+                self.amp_grad_scaler.step(self.optimizer)
+                self.amp_grad_scaler.update()
+        else:
+            output_strong = self.network(data_strong)
+            output_weak = self.network(data_weak)
+            del data_strong
+            del data_weak
+            l = self.loss_unlabeled(output_strong, output_weak)
+
+            if do_backprop:
+                l.backward()
+                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 12)
+                self.optimizer.step()
 
         return l.detach().cpu().numpy()
 
