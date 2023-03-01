@@ -218,7 +218,11 @@ class NetworkTrainerFixmatch(object):
             self.dataset_test[i] = self.dataset[i]
 
         # ------- Read unlabeled data -----------------
-        unlabeled_file = join(self.dataset_directory, "unlabeled.pkl")
+        from os import listdir
+        split_unlab = [f for f in listdir(self.dataset_directory) if f.startswith('splits_unlabeled_')][0]
+        print(f'Use {split_unlab} file for unlabeled data')
+
+        unlabeled_file = join(self.dataset_directory, split_unlab)
         if not isfile(splits_file):
             raise FileExistsError('File with the list of unlabeled data must exist, but not found!')
 
