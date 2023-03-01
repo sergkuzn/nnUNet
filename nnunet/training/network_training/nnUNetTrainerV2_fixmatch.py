@@ -317,10 +317,9 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
         :return:
         """
         data_dict = next(data_generator)
-        data = data_dict['data']
 
-        data_strong = [el[0] for el in data]
-        data_weak = [el[1] for el in data]
+        data_strong = data_dict[0]['data']
+        data_weak = data_dict[1]['data']
 
         data_strong = maybe_to_torch(data_strong)
         data_weak = maybe_to_torch(data_weak)
