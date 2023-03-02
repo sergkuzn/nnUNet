@@ -316,10 +316,19 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
         :param run_online_evaluation:
         :return:
         """
-        data_dict = next(data_generator)
+        data_list_dict = next(data_generator)
 
-        data_strong = data_dict[0]['data']
-        data_weak = data_dict[1]['data']
+        data_strong, data_weak = data_list_dict
+        data_strong, data_weak = data_strong['data'], data_weak['data']
+
+        print('strong')
+        print(type(data_strong))
+        print(len(data_strong))
+
+        print('weak')
+        print(type(data_weak))
+        print(len(data_weak))
+
 
         data_strong = maybe_to_torch(data_strong)
         data_weak = maybe_to_torch(data_weak)
