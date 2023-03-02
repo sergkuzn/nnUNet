@@ -91,6 +91,7 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
             self.ds_loss_weights = weights
             # now wrap the loss
             self.loss = MultipleOutputLoss2(self.loss, self.ds_loss_weights)
+            self.loss_unlabeled = MultipleOutputLoss2(self.loss_unlabeled, self.ds_loss_weights)
             ################# END ###################
 
             self.folder_with_preprocessed_data = join(self.dataset_directory, self.plans['data_identifier'] +
@@ -281,13 +282,6 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
         if self.fp16:
             with autocast():
                 output = self.network(data)
-                print('output1')
-                print(type(output))
-                print(len(output))
-                print(type(output[0]))
-                for i in range(len(output)):
-                    print('   ', output[i].shape)
-
                 del data
                 l = self.loss(output, target)
 
@@ -299,9 +293,6 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
                 self.amp_grad_scaler.update()
         else:
             output = self.network(data)
-            print('output2')
-            print(type(output))
-            print(len(output))
             del data
             l = self.loss(output, target)
 
@@ -344,12 +335,6 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
             with autocast():
                 output_strong = self.network(data_strong)
                 output_weak = self.network(data_weak)
-                print('strong')
-                print(type(output_strong))
-                print(len(output_strong))
-                print('weak')
-                print(type(output_weak))
-                print(len(output_weak))
                 del data_strong
                 del data_weak
                 l = self.loss_unlabeled(output_strong, output_weak)
@@ -363,12 +348,6 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
         else:
             output_strong = self.network(data_strong)
             output_weak = self.network(data_weak)
-            print('strong')
-            print(type(output_strong))
-            print(len(output_strong))
-            print('weak')
-            print(type(output_weak))
-            print(len(output_weak))
             del data_strong
             del data_weak
             l = self.loss_unlabeled(output_strong, output_weak)
