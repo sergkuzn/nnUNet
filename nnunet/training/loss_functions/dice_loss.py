@@ -421,7 +421,7 @@ class DC_and_CE_loss_unlabeled(nn.Module):
         :return:
         """
         max_probs = data_weak.max(dim=1)[0]  # batch x w h x w
-        good_pixels_mask = max_probs > torch.tensor(self.threshold).to(max_probs.devise)  # batch x w h x w
+        good_pixels_mask = max_probs > torch.tensor(self.threshold).to(max_probs.device)  # batch x w h x w
         target = data_weak.argmax(dim=1).long()  # batch x w h x w
 
         if self.ignore_label is not None:
