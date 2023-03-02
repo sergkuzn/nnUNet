@@ -284,6 +284,9 @@ class nnUNetTrainerV2Fixmatch(nnUNetTrainerFixmatch):
                 print('output1')
                 print(type(output))
                 print(len(output))
+                print(type(output[0]))
+                for i in range(len(output)):
+                    print('   ', output[i].shape)
 
                 del data
                 l = self.loss(output, target)
