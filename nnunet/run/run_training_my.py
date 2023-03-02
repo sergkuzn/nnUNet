@@ -109,7 +109,7 @@ def main():
     network_trainer = args.network_trainer
     validation_only = args.validation_only
     test_only = args.test_only
-    max_num_epochs = args.epochs
+    max_num_epochs = 1000
     plans_identifier = args.p
     find_lr = args.find_lr
     disable_postprocessing_on_folds = args.disable_postprocessing_on_folds
