@@ -37,7 +37,7 @@ def main():
                         action="store_true", default=False, )
     parser.add_argument("--epochs", default=200,
                         type=int)
-    parser.add_argument("--threshold", default=0.8,
+    parser.add_argument("--threshold", default=0.95,
                         type=float, help='threshold after softmax: pixels with higher values take part in the loss.')
     parser.add_argument("--weight_ce", default=1,
                         type=int)

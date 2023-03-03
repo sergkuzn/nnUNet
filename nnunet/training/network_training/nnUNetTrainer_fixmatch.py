@@ -48,7 +48,8 @@ matplotlib.use("agg")
 
 class nnUNetTrainerFixmatch(NetworkTrainerFixmatch):
     def __init__(self, plans_file, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
-                 unpack_data=True, deterministic=True, fp16=False, weight_ce=1, weight_dice=1, weighted_ce=False):
+                 unpack_data=True, deterministic=True, fp16=False, weight_ce=1, weight_dice=1, weighted_ce=False,
+                 threshold=0.95):
         """
         :param deterministic:
         :param fold: can be either [0 ... 5) for cross-validation, 'all' to train on all available training data or
@@ -74,6 +75,7 @@ class nnUNetTrainerFixmatch(NetworkTrainerFixmatch):
         in your init accordingly. Otherwise checkpoints won't load properly!
         """
         super().__init__(deterministic, fp16)
+        self.threshold = threshold
         self.unpack_data = unpack_data
         self.init_args = (plans_file, output_folder, dataset_directory, batch_dice, stage, unpack_data,
                           deterministic, fp16, weight_ce, weight_dice, weighted_ce)
@@ -113,7 +115,7 @@ class nnUNetTrainerFixmatch(NetworkTrainerFixmatch):
         self.loss_unlabeled = DC_and_CE_loss_unlabeled({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False},
                                                        {},
                                                        weight_ce=weight_ce, weight_dice=0,
-                                                       weighted_ce=weighted_ce)
+                                                       weighted_ce=weighted_ce, threshold=self.threshold)
 
         self.online_eval_foreground_dc = []
         self.online_eval_tp = []
