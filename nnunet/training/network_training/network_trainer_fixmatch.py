@@ -500,7 +500,7 @@ class NetworkTrainerFixmatch(object):
                         tbar.set_description("Epoch {}/{}".format(self.epoch+1, self.max_num_epochs))
 
                         l = self.run_iteration(self.tr_gen, True)
-                        if self.epoch >= 0:
+                        if self.epoch >= 10:
                             for i in range(5):  # unlabeled dataset is 5 times bigger
                                 l += self.run_iteration_unlabeled(self.tr_un_gen, True)
 
@@ -509,7 +509,7 @@ class NetworkTrainerFixmatch(object):
             else:
                 for _ in range(self.num_batches_per_epoch):
                     l = self.run_iteration(self.tr_gen, True)
-                    if self.epoch >= 0:
+                    if self.epoch >= 10:
                         for i in range(5):  # unlabeled dataset is 5 times bigger
                             l += self.run_iteration_unlabeled(self.tr_un_gen, True)
                     train_losses_epoch.append(l)
