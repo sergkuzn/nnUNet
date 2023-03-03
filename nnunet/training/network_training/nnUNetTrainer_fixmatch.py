@@ -399,7 +399,7 @@ class nnUNetTrainerFixmatch(NetworkTrainerFixmatch):
                                    oversample_foreground_percent=self.oversample_foreground_percent,
                                    pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
             dl_tr_un = DataLoader3D(self.dataset_unlabeled, self.patch_size, self.patch_size,
-                                    int(self.batch_size) // 2, False,
+                                    self.batch_size, False,
                                     oversample_foreground_percent=self.oversample_foreground_percent,
                                     pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
         else:

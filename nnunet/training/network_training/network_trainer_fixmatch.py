@@ -487,7 +487,7 @@ class NetworkTrainerFixmatch(object):
             self.initialize(True)
 
         while self.epoch < self.max_num_epochs:
-            self.print_to_log_file("\nepoch: ", self.epoch)
+            self.print_to_log_file("\nepoch: ", self.epoch, '/', self.max_num_epochs)
             epoch_start_time = time()
             train_losses_epoch = []
 
@@ -499,17 +499,19 @@ class NetworkTrainerFixmatch(object):
                     for b in tbar:
                         tbar.set_description("Epoch {}/{}".format(self.epoch+1, self.max_num_epochs))
 
-                        l1 = self.run_iteration(self.tr_gen, True)
-                        l2 = self.run_iteration_unlabeled(self.tr_un_gen, True)
-                        l = l1 + l2
+                        l = self.run_iteration(self.tr_gen, True)
+                        if self.epoch > 5:
+                            for i in range(5):  # unlabeled dataset is 5 times bigger
+                                l += self.run_iteration_unlabeled(self.tr_un_gen, True)
 
                         tbar.set_postfix(loss=l)
                         train_losses_epoch.append(l)
             else:
                 for _ in range(self.num_batches_per_epoch):
-                    l1 = self.run_iteration(self.tr_gen, True)
-                    l2 = self.run_iteration_unlabeled(self.tr_un_gen, True)
-                    l = l1 + l2
+                    l = self.run_iteration(self.tr_gen, True)
+                    if self.epoch > 5:
+                        for i in range(5):  # unlabeled dataset is 5 times bigger
+                            l += self.run_iteration_unlabeled(self.tr_un_gen, True)
                     train_losses_epoch.append(l)
 
             self.all_tr_losses.append(np.mean(train_losses_epoch))
