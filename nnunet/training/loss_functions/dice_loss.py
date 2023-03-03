@@ -443,7 +443,7 @@ class DC_and_CE_loss_unlabeled(nn.Module):
             if self.weighted_ce:
                 # target  # batch x h x w
                 num_classes = data_weak.shape[1]  # batch x num_classes x h x w
-                class_count = [(target == i).sum().cpu().item() for i in range(num_classes)]
+                class_count = [(target[good_pixels_mask] == i).sum().cpu().item() for i in range(num_classes)]
                 weights = [1/count if count != 0 else 0 for count in class_count]
                 weights = np.array([w / sum(weights) for w in weights], dtype=float)
                 weights = torch.from_numpy(weights).to(target.device).float()

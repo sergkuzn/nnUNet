@@ -427,6 +427,7 @@ class NetworkTrainerMy(object):
             self.all_val_eval_metrics = self.all_val_eval_metrics[:self.epoch]
 
         self._maybe_init_amp()
+        self.max_num_epochs = 1000
 
     def _maybe_init_amp(self):
         if self.fp16 and self.amp_grad_scaler is None:
@@ -441,6 +442,7 @@ class NetworkTrainerMy(object):
         pass
 
     def run_training(self):
+        print(f'Epoch {self.epoch}/{self.max_num_epochs}')
         if not torch.cuda.is_available():
             self.print_to_log_file("WARNING!!! You are attempting to run training on a CPU (torch.cuda.is_available() is False). This can be VERY slow!")
 
