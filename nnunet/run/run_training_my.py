@@ -199,7 +199,7 @@ def main():
             if valbest:
                 trainer.load_best_checkpoint(train=False)
             else:
-                trainer.load_final_checkpoint(train=False)
+                trainer.load_latest_checkpoint(train=False)
 
         trainer.network.eval()
 
